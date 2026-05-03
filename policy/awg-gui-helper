@@ -1,0 +1,73 @@
+#!/bin/bash
+# awg-gui-helper — privileged helper for awg-gui, invoked via pkexec.
+#
+# Security contract:
+#   - Run as root by pkexec under policy org.awg-gui.manage.
+#   - Only accepts a fixed set of subcommands; no arbitrary shell expansion.
+#   - For apply-config the source path is validated to be a regular file.
+#
+# Test mode (AWG_TEST_MODE=1):
+#   Set AWG_TEST_WG_CONF, AWG_TEST_WG_ORIGINAL, AWG_TEST_SERVICE to override
+#   hardcoded paths; systemctl is replaced by a no-op stub.
+
+set -euo pipefail
+
+# ── configurable paths (overridable in test mode) ────────────────────────────
+
+readonly SERVICE="${AWG_TEST_SERVICE:-awg-quick@wg0.service}"
+readonly WG_CONF="${AWG_TEST_WG_CONF:-/etc/amnezia/amneziawg/wg0.conf}"
+readonly WG_ORIGINAL="${AWG_TEST_WG_ORIGINAL:-/etc/amnezia/amneziawg/wg0.conf.original}"
+
+# In test mode replace systemctl with a no-op so the helper can run without root
+if [[ "${AWG_TEST_MODE:-0}" == "1" ]]; then
+    systemctl() { echo "systemctl $*"; }
+    export -f systemctl
+fi
+
+# ── dispatch ──────────────────────────────────────────────────────────────────
+
+ACTION="${1:-}"
+
+case "$ACTION" in
+    start)
+        systemctl start "$SERVICE"
+        ;;
+    stop)
+        systemctl stop "$SERVICE"
+        ;;
+    restart)
+        systemctl restart "$SERVICE"
+        ;;
+    enable)
+        systemctl enable "$SERVICE"
+        ;;
+    disable)
+        systemctl disable "$SERVICE"
+        ;;
+    apply-config)
+        SOURCE="${2:-}"
+        [[ -n "$SOURCE" ]] \
+            || { echo "apply-config: SOURCE argument required" >&2; exit 1; }
+        [[ -f "$SOURCE" ]] \
+            || { echo "apply-config: not a regular file: $SOURCE" >&2; exit 1; }
+
+        # First-run backup (never overwrites an existing backup)
+        if [[ ! -f "$WG_ORIGINAL" ]]; then
+            cp -- "$WG_CONF" "$WG_ORIGINAL"
+        fi
+
+        # Atomic replace: cp to sibling tmp then rename(2) on the same FS
+        TMP="${WG_CONF}.tmp.$$"
+        cp -- "$SOURCE" "$TMP"
+        mv -- "$TMP" "$WG_CONF"
+        ;;
+    restore-original)
+        [[ -f "$WG_ORIGINAL" ]] \
+            || { echo "restore-original: backup not found: $WG_ORIGINAL" >&2; exit 1; }
+        cp -- "$WG_ORIGINAL" "$WG_CONF"
+        ;;
+    *)
+        echo "Usage: awg-gui-helper {start|stop|restart|enable|disable|apply-config <path>|restore-original}" >&2
+        exit 1
+        ;;
+esac

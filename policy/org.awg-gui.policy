@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+
+<!--
+  PolicyKit policy for awg-gui — AmneziaWG VPN manager.
+
+  All privileged operations are executed via awg-gui-helper:
+    org.awg-gui.start        — systemctl start   awg-quick@wg0.service
+    org.awg-gui.stop         — systemctl stop    awg-quick@wg0.service
+    org.awg-gui.restart      — systemctl restart awg-quick@wg0.service
+    org.awg-gui.enable       — systemctl enable  awg-quick@wg0.service
+    org.awg-gui.disable      — systemctl disable awg-quick@wg0.service
+    org.awg-gui.apply-config — atomic replacement of /etc/amnezia/amneziawg/wg0.conf
+    org.awg-gui.restore      — restore wg0.conf from wg0.conf.original backup
+-->
+
+<policyconfig>
+
+  <action id="org.awg-gui.manage">
+    <description xml:lang="en">Manage AmneziaWG VPN tunnel</description>
+    <description xml:lang="ru">Управление VPN-туннелем AmneziaWG</description>
+    <message xml:lang="en">Authentication is required to manage the AmneziaWG VPN tunnel.</message>
+    <message xml:lang="ru">Требуется аутентификация для управления VPN-туннелем AmneziaWG.</message>
+    <defaults>
+      <!-- Non-desktop or remote sessions: require admin password each time -->
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <!-- Active desktop session: require admin password once, cached ~5 min -->
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/local/lib/awg-gui/awg-gui-helper</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+
+</policyconfig>

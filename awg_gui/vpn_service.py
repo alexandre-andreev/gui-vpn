@@ -1,13 +1,13 @@
-"""VPN service controller — wraps systemctl and manages wg0.conf via pkexec."""
+"""VPN service controller — delegates all privileged ops to awg-gui-helper."""
 
 import hashlib
-import os
 import subprocess
 from pathlib import Path
 
 SERVICE = "awg-quick@wg0.service"
 WG0_CONF = Path("/etc/amnezia/amneziawg/wg0.conf")
 WG0_ORIGINAL = Path("/etc/amnezia/amneziawg/wg0.conf.original")
+HELPER = Path("/usr/local/lib/awg-gui/awg-gui-helper")
 
 
 class VpnError(Exception):
@@ -25,23 +25,24 @@ def _run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
     return result
 
 
-def _pkexec(*args: str) -> subprocess.CompletedProcess:
-    return _run(["pkexec", *args])
+def _helper(*args: str) -> subprocess.CompletedProcess:
+    """Run awg-gui-helper via pkexec with the given subcommand and arguments."""
+    return _run(["pkexec", str(HELPER), *args])
 
 
 def start() -> None:
     """Start the VPN tunnel."""
-    _pkexec("systemctl", "start", SERVICE)
+    _helper("start")
 
 
 def stop() -> None:
     """Stop the VPN tunnel."""
-    _pkexec("systemctl", "stop", SERVICE)
+    _helper("stop")
 
 
 def restart() -> None:
     """Restart the tunnel; starts it if not currently running."""
-    _pkexec("systemctl", "restart", SERVICE)
+    _helper("restart")
 
 
 def is_active() -> bool:
@@ -51,12 +52,12 @@ def is_active() -> bool:
 
 def enable_autostart() -> None:
     """Enable VPN autostart on boot."""
-    _pkexec("systemctl", "enable", SERVICE)
+    _helper("enable")
 
 
 def disable_autostart() -> None:
     """Disable VPN autostart on boot."""
-    _pkexec("systemctl", "disable", SERVICE)
+    _helper("disable")
 
 
 def is_autostart_enabled() -> bool:
@@ -64,38 +65,20 @@ def is_autostart_enabled() -> bool:
     return _run(["systemctl", "is-enabled", SERVICE], check=False).returncode == 0
 
 
-def _ensure_backup() -> None:
-    """Create wg0.conf.original on the first run if it does not exist yet."""
-    if not WG0_ORIGINAL.exists():
-        _pkexec("cp", str(WG0_CONF), str(WG0_ORIGINAL))
-
-
 def apply_config(config_path: Path) -> None:
-    """Atomically replace wg0.conf with config_path, creating a backup first.
+    """Atomically replace wg0.conf with config_path via the helper.
 
-    Steps:
-      1. Ensure wg0.conf.original exists (first-run backup).
-      2. pkexec cp <config_path> <wg0.conf.tmp.<pid>>
-      3. pkexec mv <tmp> <wg0.conf>   — rename(2) is atomic on the same FS.
+    The helper:
+      1. Creates wg0.conf.original backup on first run.
+      2. Copies config_path to a sibling tmp file.
+      3. Renames tmp → wg0.conf  (atomic rename(2) on the same FS).
     """
-    _ensure_backup()
-    tmp = WG0_CONF.parent / f"wg0.conf.tmp.{os.getpid()}"
-    try:
-        _pkexec("cp", str(config_path), str(tmp))
-        _pkexec("mv", str(tmp), str(WG0_CONF))
-    except VpnError:
-        try:
-            _pkexec("rm", "-f", str(tmp))
-        except VpnError:
-            pass
-        raise
+    _helper("apply-config", str(config_path))
 
 
 def restore_original() -> None:
-    """Restore wg0.conf from the .original backup."""
-    if not WG0_ORIGINAL.exists():
-        raise VpnError(f"Backup not found: {WG0_ORIGINAL}")
-    _pkexec("cp", str(WG0_ORIGINAL), str(WG0_CONF))
+    """Restore wg0.conf from the .original backup via the helper."""
+    _helper("restore-original")
 
 
 def get_active_config_hash() -> str | None:
