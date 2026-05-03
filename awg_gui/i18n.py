@@ -1,0 +1,28 @@
+"""UI string constants (Russian)."""
+
+S: dict[str, str] = {
+    "title": "Управление AmneziaWG VPN",
+    "btn_connect": "Подключить",
+    "btn_switch": "Переключить",
+    "btn_disconnect": "Отключить",
+    "btn_settings": "Настройки",
+    "status_disconnected": "Отключено",
+    "status_connecting": "Подключение…",
+    "status_connected": "Подключено",
+    "status_error": "Ошибка",
+    "internet_ok": "Интернет: ОК",
+    "internet_no": "Интернет: нет",
+    "col_country": "Страна / Город",
+    "col_server": "Сервер",
+    "settings_title": "Настройки",
+    "settings_config_dir": "Каталог конфигураций:",
+    "settings_autostart_vpn": "Запускать VPN при загрузке системы",
+    "settings_autostart_app": "Запускать приложение при входе в систему",
+    "settings_restore": "Восстановить исходный wg0.conf",
+    "settings_save": "Сохранить",
+    "settings_cancel": "Отмена",
+    "err_no_selection": "Выберите конфигурацию из списка.",
+    "restore_ok": "wg0.conf восстановлен из резервной копии.",
+    "dlg_error": "Ошибка",
+    "dlg_info": "Информация",
+}

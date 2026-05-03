@@ -39,6 +39,11 @@ def stop() -> None:
     _pkexec("systemctl", "stop", SERVICE)
 
 
+def restart() -> None:
+    """Restart the tunnel; starts it if not currently running."""
+    _pkexec("systemctl", "restart", SERVICE)
+
+
 def is_active() -> bool:
     """Return True if the VPN tunnel is currently running."""
     return _run(["systemctl", "is-active", SERVICE], check=False).returncode == 0

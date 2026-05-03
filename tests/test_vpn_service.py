@@ -14,6 +14,7 @@ from awg_gui.vpn_service import (
     get_active_config_hash,
     is_active,
     is_autostart_enabled,
+    restart,
     restore_original,
     start,
     stop,
@@ -64,6 +65,16 @@ def test_disable_autostart_calls_pkexec_systemctl():
         disable_autostart()
     mock.assert_called_once_with(
         ["pkexec", "systemctl", "disable", SERVICE],
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_restart_calls_pkexec_systemctl():
+    with patch(f"{MOD}.subprocess.run", return_value=_ok()) as mock:
+        restart()
+    mock.assert_called_once_with(
+        ["pkexec", "systemctl", "restart", SERVICE],
         capture_output=True,
         text=True,
     )
