@@ -16,7 +16,9 @@ def test_enable_creates_parent_dirs(tmp_path):
 def test_desktop_file_contains_exec_entry(tmp_path):
     p = tmp_path / "awg-gui.desktop"
     enable(p)
-    assert "Exec=awg-gui" in p.read_text()
+    content = p.read_text()
+    # Exec line must be present; value is an absolute path resolved at enable() time
+    assert any(line.startswith("Exec=") for line in content.splitlines())
 
 
 def test_desktop_file_has_correct_type(tmp_path):

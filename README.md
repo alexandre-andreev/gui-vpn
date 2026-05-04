@@ -43,25 +43,26 @@ python3 -m venv .venv
 .venv/bin/pip install -e .
 ```
 
-### 3. Установить PolicyKit-политику и helper-скрипт
+### 3. Установить PolicyKit-политику, helper-скрипт и системный лаунчер
 
 ```bash
 sudo bash install.sh
 ```
 
-Скрипт копирует:
+Скрипт устанавливает:
 - `policy/awg-gui-helper` → `/usr/local/lib/awg-gui/awg-gui-helper` (права 0755, root)
 - `policy/org.awg-gui.policy` → `/usr/share/polkit-1/actions/` (права 0644, root)
+- системный лаунчер → `/usr/local/bin/awg-gui`
 
 Подробнее: [docs/install.md](docs/install.md)
 
 ## Быстрый старт
 
 ```bash
-.venv/bin/awg-gui
-# или
-make run
+awg-gui
 ```
+
+При запуске из терминала консоль сразу освобождается. Логи: `~/.local/share/awg-gui/awg-gui.log`.
 
 При первом запуске укажите каталог с `.conf`-файлами в **Настройки → Каталог конфигураций**.
 
@@ -90,7 +91,7 @@ awg_gui/          # Python-пакет
   logger.py           — логирование в файл
 policy/           # PolicyKit: helper-скрипт и .policy-файл
 tests/            # pytest (unit + bash integration)
-install.sh        # установка helper + policy (root)
+install.sh        # установка helper + policy + системного лаунчера (root)
 ```
 
 ## Лицензия
